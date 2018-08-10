@@ -1,0 +1,11 @@
+bump:
+  - bower.json
+  - package.json
+  - example.html
+  - index.html
+dest: gridforms/
+watch:
+  css: gridforms/gridforms.css
+  html: example.html
+  js: gridforms/gridforms.js
+  scss: gridforms/gridforms.sass

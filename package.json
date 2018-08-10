@@ -20,7 +20,23 @@
     "url": "https://github.com/kumailht/gridforms/issues"
   },
   "homepage": "https://github.com/kumailht/gridforms#readme",
+  "devDependencies": {
+    "browser-sync": "^2.24.5",
+    "gulp": "^4.0.0",
+    "gulp-autoprefixer": "^5.0.0",
+    "gulp-bump": "^3.1.1",
+    "gulp-cssnano": "^2.1.2",
+    "gulp-jshint": "^2.0.4",
+    "gulp-rename": "^1.3.0",
+    "gulp-sass": "^4.0.1",
+    "gulp-uglify": "^3.0.0",
+    "jshint": "^2.9.5",
+    "jshint-stylish": "^2.2.1",
+    "pump": "^3.0.0",
+    "yamljs": "^0.3.0",
+    "yargs": "^12.0.1"
+  },
   "scripts": {
-    "build": "sass -t compact gridforms/gridforms.sass gridforms/gridforms.css"
+    "build": "gulp --production"
   }
 }
