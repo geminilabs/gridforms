@@ -1,106 +1,112 @@
-//
-//  Grid Forms
-//  Copyright (c) 2013 Kumail Hunaid
-//
-//  Permission is hereby granted, free of charge, to any person obtaining a copy
-//  of this software and associated documentation files (the "Software"), to deal
-//  in the Software without restriction, including without limitation the rights
-//  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//  copies of the Software, and to permit persons to whom the Software is
-//  furnished to do so, subject to the following conditions:
-//
-//  The above copyright notice and this permission notice shall be included in
-//  all copies or substantial portions of the Software.
-//
-//  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//  THE SOFTWARE.
-//
+;(function() {
+	"use strict";
 
-jQuery(function($) {
-    var GridForms = {
-        el: {
-            fieldsRows: $('[data-row-span]'),
-            fieldsContainers: $('[data-field-span]'),
-            focusableFields: $('input, textarea, select', '[data-field-span]'),
-            window: $(window)
-        },
-        init: function() {
-            this.focusField(this.el.focusableFields.filter(':focus'));
-            this.equalizeFieldHeights();
-            this.events();
-        },
-        focusField: function(currentField) {
-            currentField.closest('[data-field-span]').addClass('focus');
-        },
-        removeFieldFocus: function() {
-            this.el.fieldsContainers.removeClass('focus');
-        },
-        events: function() {
-            var that = this;
-            that.el.fieldsContainers.click(function(event) {
-                var focusableFields = that.el.focusableFields;
+	var GridForms = function() {
+		this.fields = this.querySelectorAll_( this.config_.field );
+		this.rows = this.querySelectorAll_( this.config_.row );
+		if( this.fields.length === 0 || this.rows === 0 )return;
+		this.init_();
+	};
 
-                if (!$(event.target).is(focusableFields)) {
-                    $(this).find('input[type="text"],input[type="number"],input[type="tel"],input[type="email"], textarea, select').first().focus();
-                }
-            });
-            that.el.focusableFields.focus(function() {
-                that.focusField($(this));
-            });
-            that.el.focusableFields.blur(function() {
-                that.removeFieldFocus();
-            });
-            that.el.window.resize(function() {
-                that.equalizeFieldHeights();
-            });
-
-        },
-        equalizeFieldHeights: function() {
-            this.el.fieldsContainers.css("height", "auto");
-
-            var fieldsRows = this.el.fieldsRows;
-            var fieldsContainers = this.el.fieldsContainers;
-
-            // Make sure that the fields aren't stacked and window width is more than 700px
-            if (!this.areFieldsStacked() && $(window).width() > 700) {
-                fieldsRows.filter(":visible").each(function() {
-                    var fieldRow = $(this);
-
-                    // Singleton textarea rows should determine their row height
-                    var rowInputs = fieldRow.children();
-                    if (rowInputs.length === 1 && rowInputs.children("textarea").length === 1) return;
-
-                    // Get the height of the row (thus the tallest element's height)
-                    var rowHeight = fieldRow.css('height');
-
-                    // Set the height for each field in the row...
-                    fieldRow.find(fieldsContainers).css('height', rowHeight);
-                });
-            }
-        },
-        areFieldsStacked: function() {
-            // Get the first row
-            // which does not only contain one field
-            var firstRow = this.el.fieldsRows
-                .not('[data-row-span="1"]')
-                .first();
-
-            // Get to the total width
-            // of each field witin the row
-            var totalWidth = 0;
-            firstRow.children().each(function() {
-                totalWidth += $(this).width();
-            });
-
-            // Determine whether fields are stacked or not
-            return firstRow.width() <= totalWidth;
-        }
-    };
-    GridForms.init();
-    window.GridForms = GridForms;
-});
+	GridForms.prototype = {
+		config_: {
+			field: '[data-field-span]',
+			focusable: 'input, select, textarea',
+			row: '[data-row-span]',
+			types: ['date', 'email', 'number', 'select', 'tel', 'text', 'textarea', 'url'],
+			min_width: 700,
+		},
+		/** @return void */
+		focusField_: function( el ) {
+			var field = el.closest( this.config_.field );
+			if( field ) {
+				field.classList.add( 'focus' );
+			}
+		},
+		/** @return bool */
+		areFieldsStacked_: function() {
+			var firstRow;
+			var totalWidth = 0;
+			var i;
+			for( i = 0; i < this.rows.length; i++ ) {
+				if( this.rows[i].dataset['row-span'] !== '1' ) {
+					firstRow = this.rows[i];
+					break;
+				}
+			}
+			if( !firstRow ) {
+				firstRow = this.rows[0];
+			}
+			for( i = 0; i < firstRow.children.length; i++ ) {
+				totalWidth += firstRow.children[i].offsetWidth;
+			}
+			return firstRow.offsetWidth <= totalWidth;
+		},
+		/** @return void */
+		equalizeFieldHeights_: function() {
+		},
+		/** @return void */
+		init_: function() {
+			this.focusField_( document.activeElement );
+			this.onResize_();
+			this.initEvents_();
+		},
+		/** @return void */
+		initEvents_: function() {
+			this.fields.forEach( function( el ) {
+				el.addEventListener( 'click', this.onClick_.bind( this ));
+				var controls = this.querySelectorAll_( this.config_.focusable, el );
+				controls.forEach( function( el ) {
+					if( !~this.config_.types.indexOf( el.type ))return;
+					el.addEventListener( 'blur', this.removeFieldFocus_.bind( this ));
+					el.addEventListener( 'focus', this.onFocus_.bind( this ));
+				}.bind( this ));
+			}.bind( this ));
+			window.addEventListener( 'resize', this.onResize_.bind( this ));
+		},
+		/** @return bool */
+		isVisible_: function( el ) {
+			return el.offsetWidth > 0 && el.offsetHeight > 0;
+		},
+		/** @return void */
+		onClick_: function( ev ) {
+			var controls = this.querySelectorAll_( this.config_.focusable, ev.currentTarget );
+			for( var i = 0; i < controls.length; i++ ) {
+				if( ~this.config_.types.indexOf( controls[i].type )) {
+					controls[i].focus();
+					return;
+				}
+			}
+		},
+		/** @return void */
+		onFocus_: function( ev ) {
+			this.focusField_( ev.currentTarget );
+		},
+		/** @return void */
+		onResize_: function() {
+			this.fields.forEach( function( el ) {
+				el.style.height = 'auto';
+			});
+			if( window.innerWidth <= this.config_.min_width )return;
+			this.rows.forEach( function( el ) {
+				if( !this.isVisible_( el ))return;
+				if( el.children.length === 1 && this.querySelectorAll_( 'textarea', el ).length === 1 )return;
+				var rowHeight = el.offsetHeight + 'px';
+				this.querySelectorAll_( this.config_.field, el ).forEach( function( field ) {
+					field.style.height = rowHeight;
+				});
+			}.bind( this ));
+		},
+		/** @return NodeList */
+		querySelectorAll_: function( selector, context ) {
+			return ( context || document ).querySelectorAll( selector );
+		},
+		/** @return void */
+		removeFieldFocus_: function() {
+			this.fields.forEach( function( el ) {
+				el.classList.remove( 'focus' );
+			}.bind( this ));
+		},
+	};
+	window.GridForms = GridForms;
+})();
